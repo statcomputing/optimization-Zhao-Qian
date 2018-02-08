@@ -1,0 +1,201 @@
+---
+title: "Homework 2"
+author: "Zhao, Qian"
+date: "2018/2/7"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 1
+## (a)
+*Proof*
+\begin{align}
+  l(\theta)&= \ln\prod\limits^n_{i=1}\frac{1}{\pi[1 + (x_i - \theta)^2]}\\
+  &= \sum\limits^n_{i=1}\ln[\frac{1}{\pi[1 + (x_i - \theta)^2]}]\\
+  &= n\ln\pi^{-1} + \sum\limits^n_{i=1}\ln[1 + (\theta - x_i)^2]^{-1}\\
+  &= -n\ln\pi - \sum\limits^n_{i=1}\ln[1 + (\theta - x_i)^2].
+\end{align}
+$$l'(\theta) = -\sum\limits^n_{i=1}\frac{1}{1 + (\theta - x_i)^2}\times2(\theta - x_i) = -2\sum\limits^n_{i=1}\frac{\theta - x_i}{1 + (\theta - x_i)^2}$$.
+We know
+$$p(x) = \frac{1}{\pi(1 + x^2)},$$
+and
+$$p'(x) = -\frac{2x}{\pi(1 + x^2)^2},$$
+then
+\begin{align}
+  I(\theta)&= n\int\frac{[p'(x)]^2}{p(x)}dx\\
+  &= \frac{4n}{\pi}\int^{\infty}_{-\infty}\frac{x^2}{(1 + x^2)^3}dx,
+\end{align}
+Let $x = \tan{y}$, so $dx = \frac{1}{\cos^2{x}}$
+then,
+\begin{align}
+  I(\theta)&= \frac{4n}{\pi}\int^{\frac{\pi}{2}}_{-\frac{\pi}{2}}\frac{\tan^2x}{(1 + \tan^2x)^3}\times\frac{1}{\cos^2x}dx\\
+  &= \frac{4n}{\pi}\int^{\frac{\pi}{2}}_{-\frac{\pi}{2}}\tan^2x\cos^4xdx\\
+  &= \frac{4n}{\pi}\int^{\frac{\pi}{2}}_{-\frac{\pi}{2}}\sin^2x\cos^2xdx\\
+  &= \frac{4n}{\pi}\int^{\frac{\pi}{2}}_{-\frac{\pi}{2}}\sin^2x(1 - \sin^2x)dx\\
+  &= \frac{4n}{\pi}(\int^{\frac{\pi}{2}}_{-\frac{\pi}{2}}\sin^2xdx - \int^{\frac{\pi}{2}}_{-\frac{\pi}{2}}\sin^4xdx)\\
+  &= \frac{8n}{\pi}(\int^{\frac{\pi}{2}}_0\sin^2xdx - \int^{\frac{\pi}{2}}_0\sin^4xdx)\\
+  &= \frac{8n}{\pi}\times(\frac{\pi}{4} - \frac{3\pi}{16})\\
+  &= \frac{n}{2}
+\end{align}
+
+## (b)
+The graph of the log-likehood function
+```{r}
+x <- c(1.77, -0.23, 2.76, 3.80, 3.47, 56.75, -1.34, 4.24, -2.44, 
+       3.29, 3.71, -2.40, 4.53, -0.07, -1.05, -13.87, -2.53, -1.75)
+n <- length(x)
+theta <- seq(-3, 5, 0.1)
+loglikehood <- function(theta){
+  return(-n*log(pi) - sum(log(1 + (theta - x)^2)))
+}
+b <- lapply(theta, loglikehood) #b is l(theta)
+plot(theta, b, type = 'l', main = 'Log-likehood', xlab = 'theta', ylab = 'l(theta)')
+```
+The MLE of $\theta$
+```{r}
+theta_0 <- c(-11, -1, 0, 1.5, 4, 4.7, 7, 8, 38)
+Dloglikehood <- function(theta){
+  return(-2*sum((theta - x)/(1 + (theta - x)^2)))
+}
+DDloglikehood <- function(theta){
+  return(-2*sum((1 - (theta - x)^2)/(1 + (theta - x)^2)^2))
+}
+Newton_Raphson <- function(theta_t){
+  while(abs(Dloglikehood(theta_t))>10^(-10)){
+    theta_t <- theta_t - Dloglikehood(theta_t)/DDloglikehood(theta_t)
+  }
+  return(theta_t)
+}
+c <- lapply(theta_0, Newton_Raphson)
+c
+```
+When the start point is 4, the results is the $\theta$ of MLE.
+```{r}
+x_mean <- mean(x)
+Newton_Raphson(3.25)
+```
+It has the same result with start point 4, so the sample mean is a good starting point.
+
+## (c)
+```{r}
+alpha <- c(1, 0.64, 0.25)
+fixedpoint_1 <- function(theta_t){
+  while(abs(Dloglikehood(theta_t))>10^(-10)){
+    theta_t <- theta_t - Dloglikehood(theta_t)
+  }
+  return(theta_t)
+}
+fixedpoint_2 <- function(theta_t){
+  while(abs(Dloglikehood(theta_t))>10^(-10)){
+    theta_t <- theta_t - Dloglikehood(theta_t)*0.64
+  }
+  return(theta_t)
+}
+fixedpoint_3 <- function(theta_t){
+  while(abs(Dloglikehood(theta_t))>10^(-10)){
+    theta_t <- theta_t - Dloglikehood(theta_t)*0.25
+  }
+  return(theta_t)
+}
+```
+The resluts went wrong.
+
+##(d)
+```{r}
+Fisher_Scoring <- function(theta_t){
+  while(abs(Dloglikehood(theta_t))>10^(-10)){
+    theta_t <- theta_t + 2*Dloglikehood(theta_t)/n
+  }
+  return(theta_t)
+}
+d <- lapply(theta_0, Fisher_Scoring)
+d
+```
+
+## (e)
+
+The Newton method is the fastest, and the Fisher scoring is the most stable.
+
+# Question 2
+## (a)
+The log-likehood function of $\theta$ is 
+$$l(\theta) = \sum^n_{i=1}\ln[1-\cos(x_i - \theta)] - n\ln2\pi$$
+Graph
+```{r}
+x <- c(3.91, 4.85, 2.28, 4.06, 3.70, 4.04, 5.46, 3.53, 2.28, 1.96,
+       2.53, 3.88, 2.22, 3.47, 4.82, 2.46, 2.99, 2.54, 0.52)
+n <- length(x)
+theta <- seq(-pi, pi, 0.1)
+loglikehood <- function(theta){
+  return(-n*log(2*pi) + sum(log(1 - cos(x - theta))))
+}
+b <- lapply(theta, loglikehood) #b is l(theta)
+plot(theta, b, type = 'l', main = 'Log-likehood', xlab = 'theta', ylab = 'l(theta)')
+```
+
+## (b)
+
+\begin{align}
+  E[X|\theta]&= \frac{1}{2\pi}\int^{2\pi}_0x[1 - \cos(x - \theta)]dx\\
+  &= \frac{1}{2\pi}[\frac{1}{2}x^2|^{2\pi}_0 - \frac{1}{2\pi}\int^{2\pi}_0x\cos(x - \theta)dx]\\
+  &= \pi - \frac{1}{2\pi}\int^{2\pi}_0xd\sin(x-\theta)\\
+  &= \pi - \frac{1}{2\pi}x\sin(x - \theta)|^{2\pi}_0 + \frac{1}{2\pi}\int^{2\pi}_0\sin(x-\theta)dx\\
+  &= \pi + \sin\theta - \frac{1}{2\pi}\cos(x - \theta)|^{2\pi}_0\\
+  &= \pi + \sin\theta = \overline x
+\end{align}
+So, $\hat\theta_{moment} = \arcsin(\overline x - \pi)$
+```{r}
+theta_m <- asin(mean(x) - pi)
+theta_m
+```
+
+## (c)
+
+```{r}
+
+Dloglikehood <- function(theta){
+  return(sum(sin(theta - x)/(1 - cos(theta - x))))
+}
+DDloglikehood <- function(theta){
+  return(sum(1/(1 - cos(theta - x))))
+}
+Newton_Raphson <- function(theta){
+  while(abs(Dloglikehood(theta_m))>10^-10){
+    theta <- theta - (Dloglikehood(theta))/(DDloglikehood(theta))
+  }
+  return(theta)
+}
+```
+The result went wrong.
+
+## (d)
+
+No results
+
+## (e)
+
+```{r}
+thetaSeq <- seq(-pi, pi, by = 2*pi/199)
+```
+
+
+# Question 3
+## (a)
+
+```{r}
+beetles <- data.frame(
+  days    = c(0,  8,  28,  41,  63,  69,   97, 117,  135,  154),
+  beetles = c(2, 47, 192, 256, 768, 896, 1120, 896, 1184, 1024))
+t <- beetles$days
+N <- beetles$beetles
+K <- seq(0, 10, 0.01)
+r <- seq(-5, 5, 0.01)
+```
+
+
